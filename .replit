@@ -28,6 +28,11 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx ts-node src/server.ts"
+waitForPort = 8000
 
 [deployment]
 run = ["sh", "-c", "npx ts-node src/server.ts"]
+
+[[ports]]
+localPort = 8000
+externalPort = 80

@@ -4,6 +4,8 @@ import { generatePrompt } from '../utils/prompts';
 
 // the newest Anthropic model is "claude-3-5-sonnet-20241022" which was released October 22, 2024
 const MODEL = 'claude-3-5-sonnet-20241022';
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
 
 class ClaudeService {
   private anthropic: Anthropic;
@@ -14,27 +16,55 @@ class ClaudeService {
     });
   }
 
+  private async sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   async generateContent(path: string, contentType: ContentType, context: ContextData): Promise<string> {
-    try {
-      const prompt = generatePrompt(path, contentType, context);
+    let lastError: unknown;
 
-      const message = await this.anthropic.messages.create({
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
-        model: MODEL,
-      });
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) {
+          // Add exponential backoff delay for retries
+          await this.sleep(RETRY_DELAY * Math.pow(2, attempt - 1));
+        }
 
-      // Handle the content correctly from the message response
-      const content = message.content[0];
-      if ('text' in content) {
-        return content.text;
+        const prompt = generatePrompt(path, contentType, context);
+        const message = await this.anthropic.messages.create({
+          max_tokens: 4096,
+          messages: [{ role: 'user', content: prompt }],
+          model: MODEL,
+        });
+
+        const content = message.content[0];
+        if ('text' in content) {
+          return content.text;
+        }
+        throw new Error('Unexpected response format from Claude API');
+
+      } catch (error: unknown) {
+        lastError = error;
+
+        // Check if it's a rate limit error
+        if (error instanceof Error && 
+            ('status' in error) && 
+            (error as any).status === 429) {
+          console.log(`Rate limited on attempt ${attempt + 1}, retrying...`);
+          continue;
+        }
+
+        // For other errors, throw immediately
+        console.error('Error generating content:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        throw new Error(`Failed to generate ${contentType} content: ${errorMessage}`);
       }
-      throw new Error('Unexpected response format from Claude API');
-
-    } catch (error) {
-      console.error('Error generating content:', error);
-      throw new Error(`Failed to generate ${contentType} content: ${error.message}`);
     }
+
+    // If we exhausted all retries
+    console.error('Max retries reached for Claude API request');
+    const errorMessage = lastError instanceof Error ? lastError.message : 'Max retries reached';
+    throw new Error(`Failed to generate ${contentType} content after ${MAX_RETRIES} attempts: ${errorMessage}`);
   }
 }
 
