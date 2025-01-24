@@ -34,6 +34,36 @@ A TypeScript-based web server that generates dynamic content using Claude AI. Th
 2. Set your Anthropic API key in Replit Secrets as `ANTHROPIC_API_KEY`
 3. Run the server: `npx ts-node src/server.ts`
 
+## The Importance of prompt.txt
+
+The `prompt.txt` file is crucial as it serves as the blueprint for your entire site. It should include:
+
+- A clear description of your site's purpose and content
+- Required pages and their structure
+- Key information to be displayed (e.g., contact details, social links)
+- Any specific sections or features needed
+- Media assets like images with their URLs
+
+Example structure:
+```
+[Site Overview]
+A professional portfolio for Jane Doe, a software engineer.
+
+[Required Pages]
+- Home: Introduction and highlights
+- About: Biography and contact info (email: jane@example.com)
+- Projects: List of key projects with links
+
+[Media Assets]
+Profile image: https://example.com/profile.jpg
+
+[Special Features]
+- Interactive project showcase
+- Contact form
+```
+
+The AI will use this information to generate appropriate HTML, CSS, and JavaScript content for your site.
+
 ## API
 
 The server handles requests based on URL paths:
