@@ -13,17 +13,17 @@ function getSiteDescription(): string {
 
 export function generatePrompt(path: string, contentType: ContentType, context: ContextData): string {
   const siteDescription = getSiteDescription();
-  const basePrompt = `You are an AI content generator that creates web content for the following site:\n\n${siteDescription}\n\nGenerate ${contentType.toUpperCase()} content for the path "${path}".`;
+  const basePrompt = `You are an AI content generator that creates web content for the following site:\n\n${siteDescription}`;
 
   const contextPrompt = context.previousRequests.length > 0 
     ? `\n\nContext from previous requests:\n${context.previousRequests
-        .map(req => `${req.path}: ${req.content}`)
-        .join('\n')}`
+        .map(req => `<file name="${req.path}">\n${req.content}\n</file>`)
+        .join('\n\n')}`
     : '';
 
   const typeSpecificPrompt = getTypeSpecificPrompt(contentType);
 
-  return `${basePrompt}${contextPrompt}\n\n${typeSpecificPrompt}`;
+  return `${basePrompt}${contextPrompt}\n\n${typeSpecificPrompt}\n\nGenerate ${contentType.toUpperCase()} content for the path "${path}".`;
 }
 
 function getTypeSpecificPrompt(contentType: ContentType): string {
