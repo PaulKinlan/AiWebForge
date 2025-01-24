@@ -17,7 +17,7 @@ export function generatePrompt(path: string, contentType: ContentType, context: 
 
   const contextPrompt = context.previousRequests.length > 0 
     ? `\n\nContext from previous requests:\n${context.previousRequests
-        .map(req => `${req.path}: ${req.content.substring(0, 100)}...`)
+        .map(req => `${req.path}: ${req.content}`)
         .join('\n')}`
     : '';
 
