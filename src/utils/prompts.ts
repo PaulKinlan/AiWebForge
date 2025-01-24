@@ -34,5 +34,7 @@ function getTypeSpecificPrompt(contentType: ContentType): string {
       return 'Generate clean, modern CSS. Use flexbox/grid where appropriate. Include responsive design considerations.';
     case 'js':
       return 'Generate clean JavaScript code. Use modern ES6+ syntax. Ensure error handling and browser compatibility.';
+    case 'media':
+      return 'Media files are handled directly without content generation.';
   }
 }

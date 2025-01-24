@@ -17,4 +17,4 @@ export interface ContextData {
   }>;
 }
 
-export type ContentType = 'html' | 'css' | 'js';
+export type ContentType = 'html' | 'css' | 'js' | 'media';

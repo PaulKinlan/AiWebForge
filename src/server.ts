@@ -1,12 +1,20 @@
 import * as http from 'http';
+import * as fs from 'fs';
+import * as path from 'path';
 import { URL } from 'url';
 import { IncomingMessage, ServerResponse } from 'http';
 import { claudeService } from './services/claude';
 import { cacheService } from './services/cache';
 import { rateLimitService } from './services/rateLimit';
-import { getContentType, getMimeType } from './utils/contentType';
+import { getContentType, getMimeType, isMediaFile } from './utils/contentType';
 
 const PORT = 8000;
+const PUBLIC_DIR = path.join(process.cwd(), 'public');
+
+// Ensure public directory exists
+if (!fs.existsSync(PUBLIC_DIR)) {
+  fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+}
 
 const server = http.createServer(async (req: IncomingMessage, res: ServerResponse) => {
   try {
@@ -31,32 +39,48 @@ const server = http.createServer(async (req: IncomingMessage, res: ServerRespons
 
     // Parse URL
     const url = new URL(req.url || '/', `http://${req.headers.host}`);
-    const path = url.pathname;
+    const reqPath = url.pathname;
 
-    // Determine content type
-    const contentType = getContentType(path);
-    const mimeType = getMimeType(contentType);
+    // Handle media files directly
+    if (isMediaFile(reqPath)) {
+      const filePath = path.join(PUBLIC_DIR, reqPath);
+      if (fs.existsSync(filePath)) {
+        const mimeType = getMimeType(reqPath);
+        const stream = fs.createReadStream(filePath);
+        res.writeHead(200, { 'Content-Type': mimeType });
+        stream.pipe(res);
+        return;
+      } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('File not found');
+        return;
+      }
+    }
+
+    // For non-media files, continue with normal processing
+    const contentType = getContentType(reqPath);
+    const mimeType = getMimeType(reqPath);
 
     console.log(`Content Type: ${contentType}`);
     console.log(`MIME Type: ${mimeType}`);
 
     // Check cache
-    const cachedContent = cacheService.get(path);
+    const cachedContent = cacheService.get(reqPath);
     if (cachedContent) {
-      console.log('Cache hit for path:', path);
+      console.log('Cache hit for path:', reqPath);
       res.writeHead(200, { 'Content-Type': mimeType });
       res.end(cachedContent.content);
       return;
     }
 
-    console.log('Cache miss for path:', path);
+    console.log('Cache miss for path:', reqPath);
 
     // Generate new content
     const context = cacheService.getContext();
-    const content = await claudeService.generateContent(path, contentType, context);
+    const content = await claudeService.generateContent(reqPath, contentType, context);
 
     // Cache the response
-    cacheService.set(path, content, mimeType);
+    cacheService.set(reqPath, content, mimeType);
 
     // Send response
     res.writeHead(200, { 'Content-Type': mimeType });
