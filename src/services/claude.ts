@@ -20,6 +20,17 @@ class ClaudeService {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
+  private extractContentFromMarkdown(text: string, contentType: ContentType): string {
+    const codeBlockRegex = new RegExp(`\`\`\`${contentType}\\s*\\n([\\s\\S]*?)\\n\`\`\``, 'i');
+    const match = text.match(codeBlockRegex);
+
+    if (!match) {
+      throw new Error(`No ${contentType} code block found in the response`);
+    }
+
+    return match[1].trim();
+  }
+
   async generateContent(path: string, contentType: ContentType, context: ContextData): Promise<string> {
     let lastError: unknown;
 
@@ -39,7 +50,7 @@ class ClaudeService {
 
         const content = message.content[0];
         if ('text' in content) {
-          return content.text;
+          return this.extractContentFromMarkdown(content.text, contentType);
         }
         throw new Error('Unexpected response format from Claude API');
 
