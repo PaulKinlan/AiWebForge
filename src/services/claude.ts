@@ -25,6 +25,10 @@ class ClaudeService {
     const match = text.match(codeBlockRegex);
 
     if (!match) {
+      console.log('\n=== Claude Response Analysis ===');
+      console.log('Failed to find code block in response');
+      console.log('Content Type:', contentType);
+      console.log('Full Response:', text);
       throw new Error(`No ${contentType} code block found in the response`);
     }
 
@@ -67,6 +71,15 @@ class ClaudeService {
 
       } catch (error: unknown) {
         lastError = error;
+
+        if (error instanceof Error) {
+          // Log both the prompt and response when there's an extraction error
+          if (error.message.includes('No code block found')) {
+            console.log('\n=== Error Details ===');
+            console.log('Failed attempt:', attempt + 1);
+            console.log('Error:', error.message);
+          }
+        }
 
         // Check if it's a rate limit error
         if (error instanceof Error && 
