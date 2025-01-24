@@ -42,6 +42,15 @@ class ClaudeService {
         }
 
         const prompt = generatePrompt(path, contentType, context);
+
+        // Log the prompt being sent to Claude
+        console.log('\n=== Claude API Request ===');
+        console.log(`Time: ${new Date().toISOString()}`);
+        console.log(`Path: ${path}`);
+        console.log(`Content Type: ${contentType}`);
+        console.log('Prompt:', prompt);
+        console.log('Context length:', context.previousRequests.length);
+
         const message = await this.anthropic.messages.create({
           max_tokens: 4096,
           messages: [{ role: 'user', content: prompt }],
@@ -50,7 +59,9 @@ class ClaudeService {
 
         const content = message.content[0];
         if ('text' in content) {
-          return this.extractContentFromMarkdown(content.text, contentType);
+          const extractedContent = this.extractContentFromMarkdown(content.text, contentType);
+          console.log(`Generated content length: ${extractedContent.length} characters`);
+          return extractedContent;
         }
         throw new Error('Unexpected response format from Claude API');
 

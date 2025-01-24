@@ -32,6 +32,7 @@ waitForPort = 8000
 
 [deployment]
 run = ["sh", "-c", "npx ts-node src/server.ts"]
+deploymentTarget = "cloudrun"
 
 [[ports]]
 localPort = 8000
